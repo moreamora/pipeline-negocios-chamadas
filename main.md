@@ -18,6 +18,9 @@ A imagem a seguir mostra o fluxo dos dados desse projeto:
 
 - `HubSpot` — Fonte dos dados de negócios e chamadas, acessados via requisições às APIs 
 - `Python` — Orquestrar as etapas de coleta, tratamento e exportação.
+- `uvicorn` — Servidor ASGI leve utilizado para rodar o endpoint de teste local da FastAPI e validar a conexão com a API.
+- `FastAPI` — Framework utilizado para criar rotas, validar dados e lidar com requisições 
+- `Swagger UI` — Interface interativa que o FastAPI gera automaticamente para testes de endpoints da API.
 - `requests` — Biblioteca utilizada para realizar as requisições HTTP aos endpoints da API do HubSpot.
 - `pandas` — Manipulação e limpeza de dados estruturados em formato tabular (.csv).
 - `gspread` — Integração com o Google Sheets para leitura e escrita automatizada.
@@ -37,21 +40,21 @@ Para viabilizar o acesso seguro aos dados disponibilizados pela API do HubSpot, 
 
 Após a configuração do token de acesso, foi desenvolvido um endpoint de teste utilizando o framework FastAPI, localizado no arquivo `app/api/teste_api.py`, com o objetivo de validar a conectividade com a API do HubSpot e a estrutura dos dados retornados.
 
-Esse endpoint executa requisições `GET` ao endpoint de negócios (`deals`) da API da HubSpot:
+Esse endpoint executa requisições `GET` ao endpoint de negócios (`deals`) da API da HubSpot, a partir da data `after`e número de resultados m`max_results`:
 
 ```http
-GET /hubspot/deals?after=2025-07-01&max_results=100
+GET /hubspot/deals?after=XX-XX-XX&max_results=XXX
 ```
 
 Dessa forma, permitindo parametrizar a data de corte (`after`) e o número máximo de resultados (`max_results`). A função realiza paginação automática e filtra apenas os registros modificados após a data fornecida.
 
-Para iniciar o servidor local, basta rodar o comando:
+Para iniciar o servidor local, basta rodar o comando em um terminal dentro da raiz do projeto:
 
 <!-- termynal -->
 ``` bash
 uvicorn teste_api:app --reload
 ```
-E acessar clicando no link http
+Para acessar a interface do Swagger UI e realizar testes locais nos endpoints da API, basta abrir o link exibido no terminal após executar o comando anterior, adicionando `/docs` ao final da URL.
 
 ## 3. Coleta, tratamento e exportação
 
