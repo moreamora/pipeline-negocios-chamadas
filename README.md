@@ -39,4 +39,4 @@ Esse projeto contém um cronjob configurado para rodar automaticamente de hora e
 ```bash
 0 * * * * moreamora/pipeline-negocios-chamadas && /usr/bin/cronitor exec main -- python3 -m app.api.main >> /tmp/main.log 2>&1
 ```
-## Para mais detalhes acesse o arquivo `main.md`
+## Para acessar a documentação do projeto, veja o arquivo `main.md`

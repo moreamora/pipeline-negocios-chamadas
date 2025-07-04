@@ -511,16 +511,14 @@ def atualiza_csv(tipo: str, caminho_csv: str, after_date: str, props: list, mapa
 
 
 def main():
+    # Puxa os últimos 4 dias
     hoje = datetime.now()
-
-    # Subtrai 4 dias
     quatro_dias_atras = hoje - timedelta(days=4)
-
-    # Formata para "YYYY-MM-DD"
     data_formatada = quatro_dias_atras.strftime("%Y-%m-%d")
 
-    print("Data atual menos 4 dias:", data_formatada)
-    DATA_CORTE = "2025-01-01"
+    # Puxa a partir de uma data escolhida
+    # DATA_CORTE = "2025-01-01"
+
     atualiza_csv("negocios", NEGOCIOS_CSV, data_formatada, PROPERTIES_NEGOCIOS, API_TO_CSV_NEGOCIOS, "ID do registro.")
     atualiza_csv("chamadas", CHAMADAS_CSV, data_formatada, PROPERTIES_CHAMADAS, API_TO_CSV_CHAMADAS, "ID do objeto")
 

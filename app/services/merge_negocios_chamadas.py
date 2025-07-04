@@ -6,7 +6,7 @@ UTC = timezone.utc
 # Caminhos
 CAMINHO_CHAMADAS = "data/atualizado/chamadas.csv"
 CAMINHO_NEGOCIOS = "data/atualizado/negocios.csv"
-CAMINHO_LEADTIME = "data/atualizado/negocios-chamadas"
+CAMINHO_NEGOCIOS_CHAMADAS = "data/atualizado/negocios-chamadas"
 
 # Fase 1 – Criar CSV base com colunas desejadas
 def prepara_merge():
@@ -31,13 +31,13 @@ def prepara_merge():
     if "Associated Deal IDs" in df_filtrado.columns:
         df_filtrado["Associated Deal IDs"] = df_filtrado["Associated Deal IDs"].astype(str)
 
-    df_filtrado.to_csv(CAMINHO_LEADTIME, index=False)
+    df_filtrado.to_csv(CAMINHO_NEGOCIOS_CHAMADAS, index=False)
     print(f"✅ negocios-chamadas criado com {len(df_filtrado)} registros únicos por ID.")
 
 
 # Fase 2 – Adicionar 'Data de criação' e 'Momento de Compra' com merge baseado no ID
 def merge_csvs():
-    df_leadtime = pd.read_csv(CAMINHO_LEADTIME)
+    df_leadtime = pd.read_csv(CAMINHO_NEGOCIOS_CHAMADAS)
     df_negocios = pd.read_csv(CAMINHO_NEGOCIOS)
 
     df_leadtime["Associated Deal IDs"] = pd.to_numeric(df_leadtime["Associated Deal IDs"], errors="coerce")
@@ -65,7 +65,7 @@ def merge_csvs():
     colunas_restantes = [col for col in df_merged.columns if col not in colunas_ordenadas]
     df_merged = df_merged[colunas_ordenadas + colunas_restantes]
 
-    df_merged.to_csv(CAMINHO_LEADTIME, index=False)
+    df_merged.to_csv(CAMINHO_NEGOCIOS_CHAMADAS, index=False)
 
 # Fase 3 – Calcular e salvar Lead Time
 def arredonda_para_periodo_util(dt):
@@ -146,7 +146,7 @@ def formata_timedelta(td):
     return f"{horas:02}:{minutos:02}"
 
 def processa_e_salva_csv():
-    df = pd.read_csv(CAMINHO_LEADTIME)
+    df = pd.read_csv(CAMINHO_NEGOCIOS_CHAMADAS)
     dados = df.to_dict(orient="records")
 
     for row in dados:
@@ -189,7 +189,7 @@ def processa_e_salva_csv():
     df_resultado = df_resultado.sort_values(by="Data de criação", ascending=False)
 
     # Salva ordenado
-    df_resultado.to_csv(CAMINHO_LEADTIME, index=False)
+    df_resultado.to_csv(CAMINHO_NEGOCIOS_CHAMADAS, index=False)
     print("✅ Lead Time calculados e salvos com sucesso.")
 
 

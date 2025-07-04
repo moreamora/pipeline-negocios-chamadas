@@ -13,8 +13,6 @@ NEGOCIOS_CSV_PATH = "data/atualizado/negocios.csv"
 NEGOCIOS_CHAMADAS_CSV_PATH = "data/atualizado/negocios-chamadas.csv"
 SHEET_NAME = "Acompanhamento métricas-chave aMORA - 2025 - Lead time"
 WORKSHEET_NAME = "Negócios"
-CLIENT_SECRET_FILE = '/json/client_secret.json'
-TOKEN_FILE = 'json/token.json'
 
 SCOPES = [
     'https://www.googleapis.com/auth/spreadsheets',
@@ -158,7 +156,7 @@ def insere_formulas(worksheet):
     worksheet.update_acell('F2', mes_criacao)
     worksheet.update_acell('E2', semana_criacao)
 
-def limpar_colunas(worksheet):
+def limpa_colunas(worksheet):
     total_linhas = len(worksheet.get_all_values())
 
     if total_linhas <= 2:
@@ -193,7 +191,7 @@ def main():
 
     # # Formulas
     time.sleep(1)
-    limpar_colunas(worksheet)
+    limpa_colunas(worksheet)
     insere_formulas(worksheet)
 
     print("✅ Planilha final atualizada com dados de negócios e lead time.")

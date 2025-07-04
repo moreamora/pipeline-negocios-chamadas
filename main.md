@@ -99,10 +99,10 @@ Para acessar a interface do Swagger UI e realizar testes locais nos endpoints da
 
 ### Coleta
 
-Para coletar os dados mais recentes da HubSpot, foi criada a função `pega_novos_dados()`, dentro do arquivo `app/api/atualiza_2.py`. Essa função é genérica, ou seja, pode ser usada tanto para negócios quanto para chamadas, já que recebe como parâmetro o tipo desejado:
+Para coletar os dados mais recentes da HubSpot, foi criada a função `coleta_dados_da_api()`, dentro do arquivo `app/api/atualizar_negocios_chamadas.py`. Essa função é genérica, ou seja, pode ser usada tanto para negócios quanto para chamadas, já que recebe como parâmetro o tipo desejado:
 
 ```python
-def pega_novos_dados(tipo: str, url: str, props: list, mapa_api_to_csv: dict, after_date: str):
+def coleta_dados_da_api(url: str, props: list, after_date: str):
 ```
 Essa função faz as seguintes tarefas:
 
@@ -152,13 +152,13 @@ else:
 
 ### Tratamento
 
-Ainda dentro da função `pega_novos_dados()` já ocorre um primeiro tratamento de parte dos campos. 
+Ainda dentro do arquivo  `atualizar_negocios_chamadas.py`, a função `processa_dados()` já realiza um primeiro tratamento em parte dos campos. 
 
-Algumas propriedades retornadas pela API da HubSpot, como `"hubspot_owner_id"` (proprietário do negócio), são fornecidas apenas como identificadores (IDs), sem nomes legíveis. Para lidar com isso, foi criado o arquivo `app/testes/devolve_labels.py`.
+Algumas propriedades retornadas pela API da HubSpot, como `"hubspot_owner_id"` (proprietário do negócio), são fornecidas apenas como identificadores (IDs), sem nomes legíveis. Para lidar com isso, foi criado o arquivo `app/testes/devolve_mapeamento.py`.
 
 Nesse arquivo foram implementadas funções auxiliares como `gerar_owner_map()` e `mostrar_opcoes_propriedade_calls()`, que fazem requisições específicas à API e constroem dicionários de mapeamento entre o ID e seu respectivo nome ou descrição.
 
-Esses dicionários são salvos como variáveis no arquivo `app/api/atualiza_2.py` e utilizados na função `pega_novos_dados()`, que chama outras funções, como `traduzir_valores()`, que recebe o ID original e o converte para um nome que tenha um conteúdo significativo. 
+Esses dicionários são salvos como variáveis no arquivo `app/api/atualizar_negocios_chamadas.py` e utilizados na função `processa_dados()`, que chama outras funções, como `mapeia_valores()`, que recebe o ID original e o converte para um nome que tenha um conteúdo significativo. 
 
 Além disso, as propriedades retornadas pela API, que posteriormente se tornam colunas no arquivo CSV, possuem nomes técnicos definidos pelo padrão do HubSpot. Para tornar esses nomes mais claros e compreensíveis, foi criado manualmente o dicionário `API_TO_CSV`, que atua como mapa de conversão.
 
@@ -176,9 +176,9 @@ for item in data.get("results", []):
 
 ### Exportação
 
-Para ter uma melhor visualização dos dados, após a coleta e tratamento, eles são salvos em planilhas locais `negócios.csv` e `chamadas.csv`. Esse processo é realizado principalmente pela função `atualiza_csv` do arquivo `app/api/atualiza_2`, que organiza toda a lógica de leitura, atualização e escrita dos dados no disco.
+Para ter uma melhor visualização dos dados, após a coleta e tratamento, eles são salvos em planilhas locais `negócios.csv` e `chamadas.csv`. Esse processo é realizado principalmente pela função `atualiza_csv()` do arquivo `app/api/atualizar_negocios_chamadas.py`, que organiza toda a lógica de leitura, atualização e escrita dos dados no disco.
 
-Antes de salvar os novos dados, é necessário carregar os dados antigos já existentes no arquivo `.csv`, se ele existir. Isso é feito pela função `carrega_csv`.
+Antes de salvar os novos dados, é necessário carregar os dados antigos já existentes no arquivo `.csv`, se ele existir. Isso é feito pela função `ler_csv_existente()`.
 
 Com os dados novos e antigos em mãos, o código:
 
@@ -218,14 +218,14 @@ O arquivo é escrito com `csv.DictWriter`, utilizando `quoting=csv.QUOTE_ALL` pa
 
 ## 4. Cálculo Lead Time
 
-Foi escolhido calcular o Lead Time a partir dos arquivos `.csv` atualizados de negócios e chamadas. Com base nesses dados, é gerado o arquivo `leadtime.csv`, que reúne, entre outras informações:
+Foi escolhido calcular o Lead Time a partir dos arquivos `.csv` atualizados de negócios e chamadas. Com base nesses dados, é gerado o arquivo `negocios-chamadas.csv`, que reúne, entre outras informações:
 
 - A data de criação do lead (do CSV de negócios)
 - A data da primeira atividade (do CSV de chamadas)
 
-Essa consolidação permite medir o tempo entre a criação do lead e seu primeiro contato registrado. O arquivo `app/services/leadtime.py` faz as seguintes tarefas:
+Essa consolidação permite medir o tempo entre a criação do lead e seu primeiro contato registrado. O arquivo `app/services/leadtimmerge_negocios_chamadas.py` faz as seguintes tarefas:
 
-A função `criar_base_leadtime()`:
+A função `prepara_merge()`:
 
 - Seleciona apenas colunas relevantes para análise:
 
@@ -240,12 +240,12 @@ colunas_desejadas = [
 
 - Ordena da mais antiga para a mais recente.
 - Remove chamadas duplicadas por negócio, mantendo a primeira (mais antiga).
-- Salva a chamada mais antiga de cada lead no arquivo leadtime.csv
+- Salva a chamada mais antiga de cada lead no arquivo negocios-chamadas.csv
 
-Com as chamadas salvas, a função `completar_data_criacao_em_leadtime()`:
+Com as chamadas salvas, a função `merge_csvs()`:
 
-- Lê o leadtime.csv e o negocios.csv.
-- Traz as colunas "Data de criação" e "Momento de Compra" para dentro do leadtime.csv.
+- Lê o negocios-chamadas.csv e o negocios.csv.
+- Traz as colunas "Data de criação" e "Momento de Compra" para dentro do negocios-chamadas.csv.
 - Faz um merge (junção) entre eles, conectando cada linha pelo ID do negócio.
 
 ```python
@@ -257,9 +257,9 @@ df_merged = df_leadtime.merge(
 )
 ```
 
-- Reorganiza a ordem das colunas para melhor leitura e salva novamente no `leadtime.csv`.
+- Reorganiza a ordem das colunas para melhor leitura e salva novamente no `negocios-chamadas.csv`.
 
-Após juntar as bases, a função `processar_leadtime_csv()` chama a `calcular_lead_time_util()`que:
+Após juntar as bases, a função `processa_e_salva_csv()` chama a `calcular_lead_time_util()`que:
 
 Calcula a diferença de tempo útil (em horas e minutos) entre duas datas:
 
@@ -321,7 +321,7 @@ while atual.date() < data_fim.date():
 
 5. Trata o último dia separadamente após acabar o loop
 
-Por fim, feito o cálculo do leadtime, a `função processar_leadtime_csv()` termina sua execução ordenando o dataframe por Data de criação e salva o resultado final em `leadtime.csv`
+Por fim, feito o cálculo do leadtime, a função `processa_e_salva_csv()` termina sua execução ordenando o dataframe por Data de criação e salva o resultado final em `negocios-chamadas.csv`
 
 ## 5. Atualização do Google Sheets
 
@@ -338,11 +338,11 @@ Para realizar essa conexão, foi necessário acessar o Console do Google Cloud a
 
 [https://console.cloud.google.com/](https://console.cloud.google.com/)
 
-Criado o aplicativo google, foi implementado o código do aqruivo `app/api/google_sheets` que é responsável por atualizar automaticamente uma planilha do Google Sheets com dados de negócios e métricas de Lead Time. Ele utiliza os arquivos `.csv` previamente gerados pelo pipeline (`negocios.csv` e `leadtime.csv`) e exporta as informações para uma aba específica da planilha no Google Drive.
+Criado o aplicativo google, foi implementado o código do aqruivo `app/api/exportar_para_sheets.py` que é responsável por atualizar automaticamente uma planilha do Google Sheets com dados de negócios e métricas de Lead Time. Ele utiliza os arquivos `.csv` previamente gerados pelo pipeline (`negocios.csv` e `negocios-chamadas.csv`) e exporta as informações para uma aba específica da planilha no Google Drive.
 
-No código, a função `autenticar()` realiza a autenticação com a API do Google via OAuth2, utilizando um arquivo de credenciais (`client_secret.json`) e um token de sessão (`token.json`). Garante acesso seguro e persistente à conta do Google para leitura e escrita em planilhas.
+No código, a função `autenticar()` realiza a autenticação com a API do Google via OAuth2, utilizando a credencial `GOOGLE_SERVICE_ACCOUNT_JSON` salva no `.env`. Garante acesso seguro e persistente à conta do Google para leitura e escrita em planilhas.
 
-A função `atualizar_negocios()` insere linhas de novos negócios cadastrados no HubSpot que já foram extraídos e salvos no `.csv` local:
+A função `insere_novos_negocios()` insere linhas de novos negócios cadastrados no HubSpot que já foram extraídos e salvos no `.csv` local:
 
 Compara os registros do CSV de negócios com os IDs já presentes na planilha:
 
@@ -377,9 +377,9 @@ for id_ in novos_ids:
 - Insere novas linhas 
 - Colunas como "Horário Comercial", "Data da primeira chamada" e "Lead Time" ficam inicialmente em branco para serem preenchidas depois.
 
-Então a função `atualizar_leadtime()`:
+Então a função `atualiza_leadtime()`:
 
-- Puxa os dados o arquivo local `leadtime.csv`
+- Puxa os dados o arquivo local `negocios-chamadas.csv`
 - Cria um dicionário auxiliar `lookup` que serve para acessar rapidamente as informações de Lead Time associadas a um ID específico, funciona como uma tabel de consulta
 
 ```python
@@ -404,7 +404,7 @@ for idx, row in df_sheets.iterrows():
 
 - Atualiza a planilha com os valores de leadtime.
 
-Para evitar um problema que ocorria, que as fórumulas apagavam ao inserir uma nova linha no sheets, foram criadas as funções `joga_formulas()`, que escreve funções array do próprio sheets na linha 2, e `limpa_colunas()` que deleta todos os valores da coluna de maneira que a fórmula array adicionada funcione corretamente. 
+Para evitar um problema que ocorria, que as fórumulas apagavam ao inserir uma nova linha no sheets, foram criadas as funções `insere_formulas()`, que escreve funções array do próprio sheets na linha 2, e `limpa_colunas()` que deleta todos os valores da coluna de maneira que a fórmula array adicionada funcione corretamente. 
 
 ## 6. Cronjob
 
