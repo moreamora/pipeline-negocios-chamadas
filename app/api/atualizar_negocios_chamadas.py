@@ -350,8 +350,7 @@ def limpa_associated_deal_id(valor):
 
 def coleta_dados_da_api(url: str, props: list, after_date: str) -> list:
     print(f"📥 Buscando dados da API após {after_date}...")
-    print("aaaaaaaaaaaaaaaaaaa")
-    print(HEADERS)
+
     data_corte = datetime.strptime(after_date, "%Y-%m-%d").replace(tzinfo=timezone.utc)
     iso_date = data_corte.isoformat()
 
@@ -526,6 +525,4 @@ def main():
     atualiza_csv("chamadas", CHAMADAS_CSV, data_formatada, PROPERTIES_CHAMADAS, API_TO_CSV_CHAMADAS, "ID do objeto")
 
 if __name__ == "__main__":
-    print("aaaaaaaaaaaaaaaaaaa")
-    print(HEADERS)
     main()
