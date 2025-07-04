@@ -7,4 +7,4 @@ gspread==5.12.0
 google-auth==2.29.0
 google-auth-oauthlib==1.2.0
 beautifulsoup4==4.12.3
-numpy==1.26.4 --only-binary :all:
+numpy==2.2.6 --only-binary :all:
