@@ -11,7 +11,7 @@ import time
 
 # Configurações
 NEGOCIOS_CSV_PATH = "data/atualizado/negocios.csv"
-LEADTIME_CSV_PATH = "data/atualizado/negocios-chamadas"
+NEGOCIOS_CHAMADAS_CSV_PATH = "data/atualizado/negocios-chamadas.csv"
 SHEET_NAME = "Acompanhamento métricas-chave aMORA - 2025 - Lead time"
 WORKSHEET_NAME = "Negócios"
 CLIENT_SECRET_FILE = '/json/client_secret.json'
@@ -113,7 +113,7 @@ def insere_novos_negocios(worksheet, df_sheets):
 
 
 def atualiza_leadtime(worksheet, df_sheets):
-    df_csv = pd.read_csv(LEADTIME_CSV_PATH)
+    df_csv = pd.read_csv(NEGOCIOS_CHAMADAS_CSV_PATH)
 
     df_sheets["ID do registro."] = df_sheets["ID do registro."].astype(str).str.split('.').str[0]
     df_csv["Associated Deal IDs"] = df_csv["Associated Deal IDs"].astype(str).str.split('.').str[0]
