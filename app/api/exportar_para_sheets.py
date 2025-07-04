@@ -1,9 +1,8 @@
+from dotenv import load_dotenv
 import pandas as pd
 import gspread
 import numpy as np
-from google.oauth2.credentials import Credentials
-from google_auth_oauthlib.flow import InstalledAppFlow
-from google.auth.transport.requests import Request
+from google.oauth2.service_account import Credentials
 import os
 import json
 import tempfile
@@ -24,34 +23,18 @@ SCOPES = [
 ]
 
 def autenticar():
-    creds = None
-    try:
-        creds = Credentials.from_authorized_user_file(TOKEN_FILE, SCOPES)
-    except Exception:
-        pass
+    # Lê o JSON da conta de serviço a partir da variável de ambiente
+    load_dotenv()
+    service_account_info_str = os.getenv("GOOGLE_SERVICE_ACCOUNT_JSON")
+    
+    if not service_account_info_str:
+        raise ValueError("Variável de ambiente GOOGLE_SERVICE_ACCOUNT_JSON não definida.")
+    
+    # Converte de string para dicionário
+    service_account_info = json.loads(service_account_info_str)
 
-    if not creds or not creds.valid:
-        if creds and creds.expired and creds.refresh_token:
-            creds.refresh(Request())
-        else:
-        # Recupera JSON do client secret do .env
-            client_secret_json_str = os.getenv('GOOGLE_CLIENT_SECRET_JSON')
-            if client_secret_json_str is None:
-                 raise ValueError("GOOGLE_CREDENTIALS_JSON não definido no .env")
-
-            client_secret_json = json.loads(client_secret_json_str)
-
-             # Cria arquivo temporário para o client secret (para a lib do google poder ler)
-            with tempfile.NamedTemporaryFile(mode='w+', delete=True, suffix='.json') as temp:
-                json.dump(client_secret_json, temp)
-                temp.flush()
-
-                flow = InstalledAppFlow.from_client_secrets_file(temp.name, SCOPES)
-                creds = flow.run_local_server(port=0)
-
-        with open(TOKEN_FILE, 'w') as token_file:
-            token_file.write(creds.to_json())
-
+    # Cria as credenciais e o cliente gspread
+    creds = Credentials.from_service_account_info(service_account_info, scopes=SCOPES)
     return gspread.authorize(creds)
 
 def clean_row(row):
@@ -141,6 +124,10 @@ def atualiza_leadtime(worksheet, df_sheets):
     worksheet.update('A1', valores)
 
     print("Lead time atualizado com sucesso!")
+
+    os.makedirs(os.path.dirname(NEGOCIOS_CHAMADAS_CSV_PATH), exist_ok=True)
+    df_sheets.to_csv(NEGOCIOS_CHAMADAS_CSV_PATH, index=False, encoding='utf-8')
+    print(f"Arquivo salvo: {NEGOCIOS_CHAMADAS_CSV_PATH}")
 
 def insere_formulas(worksheet):
     horario_comercial = '''=ARRAYFORMULA(
