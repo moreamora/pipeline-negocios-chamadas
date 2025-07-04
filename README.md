@@ -8,7 +8,7 @@ Este projeto coleta dados da API da HubSpot, processa e calcula o *lead time* da
 
    ```bash
    pip install -r requirements.txt
-
+   ```
 
 2. **Crie um arquivo `.env` veja o `.env.exemplo`:**
    ```bash
