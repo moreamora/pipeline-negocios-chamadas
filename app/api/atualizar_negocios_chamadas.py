@@ -526,4 +526,6 @@ def main():
     atualiza_csv("chamadas", CHAMADAS_CSV, data_formatada, PROPERTIES_CHAMADAS, API_TO_CSV_CHAMADAS, "ID do objeto")
 
 if __name__ == "__main__":
+    print("aaaaaaaaaaaaaaaaaaa")
+    print(HEADERS)
     main()
