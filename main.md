@@ -66,36 +66,7 @@ Arquivo exportar_para_sheets.py
 | `limpar_colunas`         | Limpa as colunas de fórmula para evitar conflitos antes de aplicar novas fórmulas.         |
 
 
-
-## 2. Conexão com APIs HubSpot
-
-Para a coleta dos dados foram utilizadas os seguintes endpoints de APIs do HubSpot:
-
-- [https://api.hubapi.com/crm/v3/objects/deals](https://api.hubapi.com/crm/v3/objects/deals)
-- [https://api.hubapi.com/crm/v3/objects/calls](https://api.hubapi.com/crm/v3/objects/calls)
-
-
-Para viabilizar o acesso seguro aos dados disponibilizados pela API do HubSpot, foi necessário gerar um token de autenticação do tipo Private App Token. Embora já existissem outros aplicativos conectados à conta da aMORA, optou-se pela criação de um novo aplicativo dedicado exclusivamente a este projeto. Essa decisão teve como objetivo evitar impactos indesejados em integrações existentes e manter a organização e rastreabilidade do uso da API para fins analíticos.
-
-Após a configuração do token de acesso, foi desenvolvido um endpoint de teste utilizando o framework FastAPI, localizado no arquivo `app/api/teste_api.py`, com o objetivo de validar a conectividade com a API do HubSpot e a estrutura dos dados retornados.
-
-Esse endpoint executa requisições `GET` ao endpoint de negócios (`deals`) da API da HubSpot, a partir da data `after`e número de resultados m`max_results`:
-
-```http
-GET /hubspot/deals?after=XX-XX-XX&max_results=XXX
-```
-
-Dessa forma, permitindo parametrizar a data de corte (`after`) e o número máximo de resultados (`max_results`). A função realiza paginação automática e filtra apenas os registros modificados após a data fornecida.
-
-Para iniciar o servidor local, basta rodar o comando em um terminal dentro da raiz do projeto:
-
-<!-- termynal -->
-``` bash
-uvicorn teste_api:app --reload
-```
-Para acessar a interface do Swagger UI e realizar testes locais nos endpoints da API, basta abrir o link exibido no terminal após executar o comando anterior, adicionando `/docs` ao final da URL.
-
-## 3. Coleta, tratamento e exportação
+## 2. Coleta, tratamento e exportação
 
 ### Coleta
 
@@ -147,7 +118,6 @@ else:
     print("[3] Fim da paginação")
     break
 ```
-
 
 
 ### Tratamento
@@ -216,7 +186,7 @@ Os campos são organizados com base na lista colunas, que garante que todos os c
 
 O arquivo é escrito com `csv.DictWriter`, utilizando `quoting=csv.QUOTE_ALL` para evitar erros com campos que contêm vírgulas ou aspas.
 
-## 4. Cálculo Lead Time
+## 3. Cálculo Lead Time
 
 Foi escolhido calcular o Lead Time a partir dos arquivos `.csv` atualizados de negócios e chamadas. Com base nesses dados, é gerado o arquivo `negocios-chamadas.csv`, que reúne, entre outras informações:
 
@@ -323,7 +293,7 @@ while atual.date() < data_fim.date():
 
 Por fim, feito o cálculo do leadtime, a função `processa_e_salva_csv()` termina sua execução ordenando o dataframe por Data de criação e salva o resultado final em `negocios-chamadas.csv`
 
-## 5. Atualização do Google Sheets
+## 4. Atualização do Google Sheets
 
 Com os dados atualizados e o Lead Time já calculado, as informações são exportadas automaticamente para uma planilha no Google Sheets, que serve de base para análises semanais visuais. Para realizar essa integração, optou-se pelo uso da biblioteca `gspread`, uma solução segura e eficaz, pois permite:
 
@@ -406,10 +376,10 @@ for idx, row in df_sheets.iterrows():
 
 Para evitar um problema que ocorria, que as fórumulas apagavam ao inserir uma nova linha no sheets, foram criadas as funções `insere_formulas()`, que escreve funções array do próprio sheets na linha 2, e `limpa_colunas()` que deleta todos os valores da coluna de maneira que a fórmula array adicionada funcione corretamente. 
 
-## 6. Cronjob
+## 5. Cronjob
 
 
 
 
 
-## 7. Conclusão
+## 6. Conclusão
