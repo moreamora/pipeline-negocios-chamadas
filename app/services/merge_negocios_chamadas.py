@@ -6,10 +6,10 @@ UTC = timezone.utc
 # Caminhos
 CAMINHO_CHAMADAS = "data/atualizado/chamadas.csv"
 CAMINHO_NEGOCIOS = "data/atualizado/negocios.csv"
-CAMINHO_LEADTIME = "data/atualizado/leadtime.csv"
+CAMINHO_LEADTIME = "data/atualizado/negocios-chamadas"
 
 # Fase 1 – Criar CSV base com colunas desejadas
-def criar_base_leadtime():
+def prepara_merge():
     colunas_desejadas = [
         "Associated Deal IDs",
         "Associated Deal",
@@ -32,11 +32,11 @@ def criar_base_leadtime():
         df_filtrado["Associated Deal IDs"] = df_filtrado["Associated Deal IDs"].astype(str)
 
     df_filtrado.to_csv(CAMINHO_LEADTIME, index=False)
-    print(f"✅ leadtime.csv criado com {len(df_filtrado)} registros únicos por ID.")
+    print(f"✅ negocios-chamadas criado com {len(df_filtrado)} registros únicos por ID.")
 
 
 # Fase 2 – Adicionar 'Data de criação' e 'Momento de Compra' com merge baseado no ID
-def completar_data_criacao_em_leadtime():
+def merge_csvs():
     df_leadtime = pd.read_csv(CAMINHO_LEADTIME)
     df_negocios = pd.read_csv(CAMINHO_NEGOCIOS)
 
@@ -68,7 +68,7 @@ def completar_data_criacao_em_leadtime():
     df_merged.to_csv(CAMINHO_LEADTIME, index=False)
 
 # Fase 3 – Calcular e salvar Lead Time
-def arredondar_para_periodo_util(dt):
+def arredonda_para_periodo_util(dt):
     dia_semana = dt.weekday()
     hora = dt.time()
     
@@ -89,14 +89,14 @@ def arredondar_para_periodo_util(dt):
             return datetime.combine((dt + timedelta(days=1)).date(), time(8, 0), tzinfo=UTC)
     return dt
 
-def calcular_lead_time_util(data_inicio, data_fim):
+def calcula_lead_time_util(data_inicio, data_fim):
     if data_inicio.tzinfo is None:
         data_inicio = data_inicio.replace(tzinfo=UTC)
     if data_fim.tzinfo is None:
         data_fim = data_fim.replace(tzinfo=UTC)
     
-    data_inicio = arredondar_para_periodo_util(data_inicio)
-    data_fim = arredondar_para_periodo_util(data_fim)
+    data_inicio = arredonda_para_periodo_util(data_inicio)
+    data_fim = arredonda_para_periodo_util(data_fim)
     
     if data_fim <= data_inicio:
         return timedelta(0)
@@ -139,13 +139,13 @@ def calcular_lead_time_util(data_inicio, data_fim):
     
     return total
 
-def formatar_timedelta(td):
+def formata_timedelta(td):
     total_segundos = int(td.total_seconds())
     horas, resto = divmod(total_segundos, 3600)
     minutos = resto // 60
     return f"{horas:02}:{minutos:02}"
 
-def processar_leadtime_csv():
+def processa_e_salva_csv():
     df = pd.read_csv(CAMINHO_LEADTIME)
     dados = df.to_dict(orient="records")
 
@@ -157,7 +157,7 @@ def processar_leadtime_csv():
             try:
                 dt_criacao = datetime.strptime(data_criacao, "%Y-%m-%d %H:%M").replace(tzinfo=UTC)
                 dt_atividade = datetime.strptime(data_atividade, "%Y-%m-%d %H:%M").replace(tzinfo=UTC)
-                lead_time = calcular_lead_time_util(dt_criacao, dt_atividade)
+                lead_time = calcula_lead_time_util(dt_criacao, dt_atividade)
 
                 # Verifica se a DATA DE CRIAÇÃO está dentro do horário comercial
                 hora = dt_criacao.time()
@@ -171,7 +171,7 @@ def processar_leadtime_csv():
                     row["Horário da atividade"] = "Fora do horário comercial"
 
                 # Formatos: HH:MM e minutos inteiros
-                row["Lead Time"] = formatar_timedelta(lead_time)
+                row["Lead Time"] = formata_timedelta(lead_time)
                 row["Lead Time (min)"] = int(lead_time.total_seconds() // 60)
 
             except Exception as e:
@@ -195,9 +195,9 @@ def processar_leadtime_csv():
 
 # --- Executar tudo em uma função principal ---
 def main():
-    criar_base_leadtime()
-    completar_data_criacao_em_leadtime()
-    processar_leadtime_csv()
+    prepara_merge()
+    merge_csvs()
+    processa_e_salva_csv()
 
 if __name__ == "__main__":
     main()

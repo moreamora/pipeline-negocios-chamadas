@@ -1,18 +1,18 @@
-from app.api.atualiza_2 import main as atualizar_dados
-from app.services.leadtime import main as gerar_leadtime
-from app.api.google_sheets import main as atualizar_google_sheets
+from app.api.atualizar_negocios_chamadas import main as atualiza_dados
+from app.services.merge_negocios_chamadas import main as merge_dados
+from app.api.exportar_para_sheets import main as atualiza_google_sheets
 
 def executar_pipeline_completo():
     print("🚀 Iniciando pipeline completo...")
     
     print("\n🔁 1. Atualizando dados...")
-    atualizar_dados()
+    atualiza_dados()
 
-    print("\n🧱 2. Gerando leadtime...")
-    gerar_leadtime()
+    print("\n🧱 2. Juntando csvs e calculando leadtime...")
+    merge_dados()
 
     print("\n📊 3. Atualizando Sheets...")
-    atualizar_google_sheets()
+    atualiza_google_sheets()
 
     print("\n✅ Pipeline finalizado com sucesso!")
 

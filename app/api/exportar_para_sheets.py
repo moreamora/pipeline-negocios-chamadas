@@ -4,15 +4,18 @@ import numpy as np
 from google.oauth2.credentials import Credentials
 from google_auth_oauthlib.flow import InstalledAppFlow
 from google.auth.transport.requests import Request
+import os
+import json
+import tempfile
 import time
 
 # Configurações
 NEGOCIOS_CSV_PATH = "data/atualizado/negocios.csv"
-LEADTIME_CSV_PATH = "data/atualizado/leadtime.csv"
+LEADTIME_CSV_PATH = "data/atualizado/negocios-chamadas"
 SHEET_NAME = "Acompanhamento métricas-chave aMORA - 2025 - Lead time"
 WORKSHEET_NAME = "Negócios"
-CLIENT_SECRET_FILE = 'client_secret.json'
-TOKEN_FILE = 'token.json'
+CLIENT_SECRET_FILE = '/json/client_secret.json'
+TOKEN_FILE = 'json/token.json'
 
 SCOPES = [
     'https://www.googleapis.com/auth/spreadsheets',
@@ -31,10 +34,23 @@ def autenticar():
         if creds and creds.expired and creds.refresh_token:
             creds.refresh(Request())
         else:
-            flow = InstalledAppFlow.from_client_secrets_file(CLIENT_SECRET_FILE, SCOPES)
-            creds = flow.run_local_server(port=0)
-        with open(TOKEN_FILE, 'w') as token:
-            token.write(creds.to_json())
+        # Recupera JSON do client secret do .env
+            client_secret_json_str = os.getenv('GOOGLE_CLIENT_SECRET_JSON')
+            if client_secret_json_str is None:
+                 raise ValueError("GOOGLE_CREDENTIALS_JSON não definido no .env")
+
+            client_secret_json = json.loads(client_secret_json_str)
+
+             # Cria arquivo temporário para o client secret (para a lib do google poder ler)
+            with tempfile.NamedTemporaryFile(mode='w+', delete=True, suffix='.json') as temp:
+                json.dump(client_secret_json, temp)
+                temp.flush()
+
+                flow = InstalledAppFlow.from_client_secrets_file(temp.name, SCOPES)
+                creds = flow.run_local_server(port=0)
+
+        with open(TOKEN_FILE, 'w') as token_file:
+            token_file.write(creds.to_json())
 
     return gspread.authorize(creds)
 
@@ -49,7 +65,7 @@ def clean_row(row):
             clean.append(str(val))
     return clean
 
-def atualizar_negocios(worksheet, df_sheets):
+def insere_novos_negocios(worksheet, df_sheets):
     df_csv = pd.read_csv(NEGOCIOS_CSV_PATH)
 
     # Ordena o CSV por data de criação: mais antigo primeiro (crescente)
@@ -96,7 +112,7 @@ def atualizar_negocios(worksheet, df_sheets):
 
 
 
-def atualizar_leadtime(worksheet, df_sheets):
+def atualiza_leadtime(worksheet, df_sheets):
     df_csv = pd.read_csv(LEADTIME_CSV_PATH)
 
     df_sheets["ID do registro."] = df_sheets["ID do registro."].astype(str).str.split('.').str[0]
@@ -126,7 +142,7 @@ def atualizar_leadtime(worksheet, df_sheets):
 
     print("Lead time atualizado com sucesso!")
 
-def joga_formulas(worksheet):
+def insere_formulas(worksheet):
     horario_comercial = '''=ARRAYFORMULA(
             SE(D2:D=""; "";
                 SE(
@@ -178,7 +194,7 @@ def main():
     df_sheets = pd.DataFrame(records)
 
     # Atualiza negócios
-    atualizar_negocios(worksheet, df_sheets)
+    insere_novos_negocios(worksheet, df_sheets)
 
     # 🔁 Recarrega a planilha após inserção
     time.sleep(2)  # Pequeno delay para garantir que o Google Sheets salve os dados
@@ -186,12 +202,12 @@ def main():
     df_sheets = pd.DataFrame(records)
 
     # # Atualiza lead time com base na versão mais atual da planilha
-    atualizar_leadtime(worksheet, df_sheets)
+    atualiza_leadtime(worksheet, df_sheets)
 
     # # Formulas
     time.sleep(1)
     limpar_colunas(worksheet)
-    joga_formulas(worksheet)
+    insere_formulas(worksheet)
 
     print("✅ Planilha final atualizada com dados de negócios e lead time.")
 

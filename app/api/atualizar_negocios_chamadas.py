@@ -281,8 +281,7 @@ CALL_DISPOSITION_MAP = {
     "8d94ac64-195e-43ba-8dc5-cbf810b56281": "Caixa postal"
 }
 
-
-def traduzir_valores(mapa: dict, propriedade_id: str):
+def mapeia_valores(mapa: dict, propriedade_id: str):
     """
     Traduz o valor original com base em um dicionário de mapeamento.
     Se não encontrar, retorna o valor padrão (ou o próprio valor original).
@@ -292,7 +291,7 @@ def traduzir_valores(mapa: dict, propriedade_id: str):
         return mapa.get(propriedade_id, propriedade_id)
 
 
-def formatar_data(data_iso):
+def formata_data(data_iso):
     if not data_iso:
         return ""
     try:
@@ -303,7 +302,7 @@ def formatar_data(data_iso):
         return data_iso
 
 
-def limpar_html(html: str) -> str:
+def limpa_html(html: str) -> str:
     """
     Remove tags HTML e retorna texto limpo, com quebras de linha entre blocos e frases grudadas.
     """
@@ -330,7 +329,7 @@ def limpar_html(html: str) -> str:
     return texto_formatado.strip()
 
 
-def formatar_duracao(ms):
+def converte_ms_para_hms(ms):
     try:
         segundos = int(ms) // 1000
         horas = segundos // 3600
@@ -340,7 +339,7 @@ def formatar_duracao(ms):
     except:
         return ""
 
-def limpar_associated_deal_id(valor):
+def limpa_associated_deal_id(valor):
     """
     Remove o prefixo '0-3-' (ou similar) do ID do negócio e retorna apenas o número final.
     """
@@ -349,12 +348,12 @@ def limpar_associated_deal_id(valor):
     return valor
 
 
-def pega_novos_dados(tipo: str, url: str, props: list, mapa_api_to_csv: dict, after_date: str):
-    print(f"\n📥 Buscando {tipo} modificados após {after_date}...")
+def coleta_dados_da_api(url: str, props: list, after_date: str) -> list:
+    print(f"📥 Buscando dados da API após {after_date}...")
     data_corte = datetime.strptime(after_date, "%Y-%m-%d").replace(tzinfo=timezone.utc)
     iso_date = data_corte.isoformat()
 
-    resultados = []
+    resultados_brutos = []
     after = None
 
     while True:
@@ -362,7 +361,7 @@ def pega_novos_dados(tipo: str, url: str, props: list, mapa_api_to_csv: dict, af
             "filterGroups": [{
                 "filters": [{
                     "propertyName": "hs_lastmodifieddate",
-                    "operator": "GT", # Operador greater than
+                    "operator": "GT",
                     "value": iso_date
                 }]
             }],
@@ -372,68 +371,15 @@ def pega_novos_dados(tipo: str, url: str, props: list, mapa_api_to_csv: dict, af
         if after:
             payload["after"] = after
 
-        # Requisição para API
         response = requests.post(f"{url}/search", headers={**HEADERS, "Content-Type": "application/json"}, data=json.dumps(payload))
         if not response.ok:
-            raise Exception(f"Erro na API ({tipo}): {response.text}")
+            raise Exception(f"Erro na API: {response.text}")
 
         data = response.json()
-        print(f"↪ Página com {len(data.get('results', []))} registros")
+        registros = data.get("results", [])
+        print(f"↪ Página com {len(registros)} registros")
+        resultados_brutos.extend(registros)
 
-        # Loop de processamento dos dados
-
-        for item in data.get("results", []):
-            props_api = item.get("properties", {})
-            props_csv = {mapa_api_to_csv.get(k, k): v for k, v in props_api.items()}
-
-            if tipo == "negocios":
-
-                # Traduzir dealstage
-                dealstage_id = props_api.get("dealstage")
-                if dealstage_id in DEALSTAGE_MAP:
-                    props_csv["Etapa do negócio"] = DEALSTAGE_MAP[dealstage_id]
-
-                # Traduzir ids para nomes
-                props_csv["Proprietário do negócio"] = traduzir_valores(OWNER_MAP, props_api.get("hubspot_owner_id"))
-                props_csv["Momento de Compra"] = traduzir_valores(PURCHASE_MOMENT_MAP, props_api.get("purchase_moment"))
-
-                # Traduzir foi_conectado
-                foi_conectado_valor = props_api.get("foi_conectado")
-                if foi_conectado_valor is not None:
-                    props_csv["Foi conectado"] = FOI_CONECTADO_MAP.get(str(foi_conectado_valor).lower(), "Não informado")
-                    
-
-            if tipo == "chamadas":
-                # Traduzir ids para nomes
-                props_csv["Atividade atribuída a"] = traduzir_valores(OWNER_MAP, props_api.get("hubspot_owner_id"))
-                props_csv["Resultado da chamada"] = traduzir_valores(CALL_DISPOSITION_MAP, props_api.get("hs_call_disposition"))
-
-                # Formatação
-                props_csv["Observações de chamada"] = limpar_html(props_api.get("hs_call_body"))
-                props_csv["Duração da chamada (HH:mm:ss)"] = formatar_duracao(props_api.get("hs_call_duration"))
-                props_csv["Associated Deal IDs"] = limpar_associated_deal_id(props_api.get("hs_call_primary_deal"))
-
-                titulo_chamada = props_csv.get("Título da chamada", "")
-                props_csv["Associated Deal"] = titulo_chamada.replace("Chamada com ", "").strip()
-
-            # Formatar datas, limpar valores inválidos
-            for campo_api in props_api:
-                if "date" in campo_api.lower() or "timestamp" in campo_api.lower():
-                    valor_bruto = props_api[campo_api]
-                    nome_csv = mapa_api_to_csv.get(campo_api, campo_api)
-
-                    if isinstance(valor_bruto, str) and ("T" in valor_bruto or "-" in valor_bruto):
-                        props_csv[nome_csv] = formatar_data(valor_bruto)
-                    else:
-                        props_csv[nome_csv] = ""  # limpa valor inválido para data
-
-            # Garantir que todas as colunas existem, mesmo vazias
-            for col in mapa_api_to_csv.values():
-                props_csv.setdefault(col, "")
-
-            resultados.append(props_csv)
-
-        # Paginacao
         paging = data.get("paging", {}).get("next", {}).get("after")
         if paging:
             after = paging
@@ -441,11 +387,67 @@ def pega_novos_dados(tipo: str, url: str, props: list, mapa_api_to_csv: dict, af
             print("[3] Fim da paginação")
             break
 
-    print(f"✅ Total coletado ({tipo}): {len(resultados)}")
+    return resultados_brutos
+
+
+def processa_dados(tipo: str, dados_brutos: list, mapa_api_to_csv: dict) -> list:
+    resultados = []
+
+    for item in dados_brutos:
+        props_api = item.get("properties", {})
+        props_csv = {mapa_api_to_csv.get(k, k): v for k, v in props_api.items()}
+
+        if tipo == "negocios":
+            # Traduzir dealstage
+            dealstage_id = props_api.get("dealstage")
+            if dealstage_id in DEALSTAGE_MAP:
+                props_csv["Etapa do negócio"] = DEALSTAGE_MAP[dealstage_id]
+
+            # Traduzir ids para nomes
+            props_csv["Proprietário do negócio"] = mapeia_valores(OWNER_MAP, props_api.get("hubspot_owner_id"))
+            props_csv["Momento de Compra"] = mapeia_valores(PURCHASE_MOMENT_MAP, props_api.get("purchase_moment"))
+
+            # Traduzir foi_conectado
+            foi_conectado_valor = props_api.get("foi_conectado")
+            if foi_conectado_valor is not None:
+                props_csv["Foi conectado"] = FOI_CONECTADO_MAP.get(str(foi_conectado_valor).lower(), "Não informado")
+
+        if tipo == "chamadas":
+            # Traduzir ids para nomes
+            props_csv["Atividade atribuída a"] = mapeia_valores(OWNER_MAP, props_api.get("hubspot_owner_id"))
+            props_csv["Resultado da chamada"] = mapeia_valores(CALL_DISPOSITION_MAP, props_api.get("hs_call_disposition"))
+
+            # Formatação
+            props_csv["Observações de chamada"] = limpa_html(props_api.get("hs_call_body"))
+            props_csv["Duração da chamada (HH:mm:ss)"] = converte_ms_para_hms(props_api.get("hs_call_duration"))
+            props_csv["Associated Deal IDs"] = limpa_associated_deal_id(props_api.get("hs_call_primary_deal"))
+
+            # Remove "Chamada com" do título da chamada
+            titulo_chamada = props_csv.get("Título da chamada", "")
+            props_csv["Associated Deal"] = titulo_chamada.replace("Chamada com ", "").strip()
+
+        # Formatar datas, limpar valores inválidos
+        for campo_api in props_api:
+            if "date" in campo_api.lower() or "timestamp" in campo_api.lower():
+                valor_bruto = props_api[campo_api]
+                nome_csv = mapa_api_to_csv.get(campo_api, campo_api)
+
+                if isinstance(valor_bruto, str) and ("T" in valor_bruto or "-" in valor_bruto):
+                    props_csv[nome_csv] = formata_data(valor_bruto)
+                else:
+                    props_csv[nome_csv] = ""
+
+        # Garantir que todas as colunas existem, mesmo vazias
+        for col in mapa_api_to_csv.values():
+            props_csv.setdefault(col, "")
+
+        resultados.append(props_csv)
+
+    print(f"✅ Total processado ({tipo}): {len(resultados)}")
     return resultados
 
 
-def carrega_csv(caminho_csv: str, mapa_api_to_csv: dict):
+def ler_csv_existente(caminho_csv: str, mapa_api_to_csv: dict):
     print(f"📂 Carregando dados do CSV existente: {caminho_csv}...")
     if not os.path.exists(caminho_csv):
         print("⚠️  CSV ainda não existe. Criando novo.")
@@ -458,17 +460,20 @@ def carrega_csv(caminho_csv: str, mapa_api_to_csv: dict):
         return rows, reader.fieldnames
 
 
-
 def atualiza_csv(tipo: str, caminho_csv: str, after_date: str, props: list, mapa_api_to_csv: dict, id_coluna: str):
     print(f"🚀 Iniciando atualização do CSV {tipo}...\n")
-    novos_dados = pega_novos_dados(tipo, NEGOCIOS_URL if tipo == "negocios" else CHAMADAS_URL, props, mapa_api_to_csv, after_date)
-    existentes, colunas = carrega_csv(caminho_csv, mapa_api_to_csv)
 
+    # Coletar dados da API diretamente
+    url = NEGOCIOS_URL if tipo == "negocios" else CHAMADAS_URL
+    dados_brutos = coleta_dados_da_api(url, props, after_date)
+    novos_dados = processa_dados(tipo, dados_brutos, mapa_api_to_csv)
+
+    # Carregar CSV existente
+    existentes, colunas = ler_csv_existente(caminho_csv, mapa_api_to_csv)
     colunas = list(colunas or [])
 
-    if not colunas:
+    if not colunas: 
         colunas = list(mapa_api_to_csv.values())
-
 
     id_map = {linha[id_coluna]: linha for linha in existentes}
     novos_count = 0
@@ -480,14 +485,13 @@ def atualiza_csv(tipo: str, caminho_csv: str, after_date: str, props: list, mapa
             id_map[hs_id].update(novo)
             atualizados_count += 1
         else:
-            existentes.insert(0, novo)  # <-- Insere novo no topo (linha 2 do CSV)
+            existentes.insert(0, novo)
             novos_count += 1
 
     print(f"\n🧾 Atualizações concluídas:")
     print(f"🔁 {tipo} atualizados: {atualizados_count}")
     print(f"➕ Novos {tipo} adicionados: {novos_count} → {caminho_csv}")
 
-    # Atualizar colunas com campos novos adicionados dinamicamente
     for row in existentes:
         for col in row:
             if col not in colunas:
@@ -502,10 +506,7 @@ def atualiza_csv(tipo: str, caminho_csv: str, after_date: str, props: list, mapa
             linha_completa = {col: str(row.get(col, "") or "") for col in colunas}
             writer.writerow(linha_completa)
 
-
-
     print("✅ CSV salvo com sucesso!\n")
-    
 
 
 def main():

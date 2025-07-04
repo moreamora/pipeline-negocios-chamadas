@@ -27,6 +27,45 @@ A imagem a seguir mostra o fluxo dos dados desse projeto:
 - `"Acompanhamento métricas-chave aMORA - 2025 - Lead time"` — Google Sheets
 - `cronitor + cronjob` — Agendamento automático do pipeline em horários definidos.
 
+### Funções utilizadas
+
+Arquivo atualizar_negocios_chamadas.py:
+
+| Função                 | O que faz                                           |
+|------------------------|-----------------------------------------------------|
+| `mapeia_valores`       | Mapeamento de valores usando um dicionário.         |
+| `formata_data`         | Converte data ISO para formato brasileiro (BR).     |
+| `limpa_html`           | Remove tags HTML e limpa texto.                     |
+| `converte_ms_para_hms` | Converte milissegundos em horas:minutos:segundos.   |
+| `limpa_associated_deal_id` | Remove prefixo do ID do negócio.                |
+| `coleta_dados_da_api`  | Busca dados paginados da API do HubSpot.            |
+| `processa_dados`       | Processa dados brutos e faz traduções/formatações.  |
+| `ler_csv_existente`    | Lê dados de CSV existente ou cria novo.             |
+| `atualiza_csv`         | Atualiza CSV com dados novos e existentes.          |
+
+Arquivo merge_negocios_chamadas.py
+
+| Função                         | O que faz                                                                |
+|-------------------------------|---------------------------------------------------------------------------|
+| `prepara_merge`               | Cria o CSV `negocios-chamadas.csv` com as primeiras chamadas únicas por negócio.   |
+| `merge_csvs`                  | Adiciona "Data de criação", "Momento de Compra" e "Lead time" ao CSV via merge com `negocios.csv`. |
+| `arredonda_para_periodo_util` | Ajusta datas para o início do próximo horário útil.                       |
+| `calcula_lead_time_util`      | Calcula o tempo útil entre duas datas considerando dias e horários úteis. |
+| `formata_timedelta`           | Formata um `timedelta` para string no formato `HH:MM`.                    |
+| `processa_e_salva_csv`        | Calcula e insere o Lead Time (em HH:MM e minutos) no CSV final.           |
+
+Arquivo exportar_para_sheets.py
+
+| Função                   | O que faz                                                                                  |
+|--------------------------|---------------------------------------------------------------------------------------------|
+| `autenticar`             | Realiza autenticação com a API do Google Sheets utilizando `client_secret.json` e `token.json`. |
+| `clean_row`              | Converte os valores de uma linha para strings, removendo `NaN` ou infinitos.               |
+| `insere_novos_negocios`  | Adiciona à planilha os negócios ainda não inseridos, ordenando por data de criação.        |
+| `atualiza_leadtime`      | Atualiza as colunas de *Lead Time* e *Data da primeira chamada* com base no CSV local.     |
+| `insere_formulas`        | Insere fórmulas do Google Sheets para calcular horário comercial, mês e semana de criação. |
+| `limpar_colunas`         | Limpa as colunas de fórmula para evitar conflitos antes de aplicar novas fórmulas.         |
+
+
 
 ## 2. Conexão com APIs HubSpot
 
