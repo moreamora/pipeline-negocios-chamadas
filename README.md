@@ -16,6 +16,7 @@ Este projeto coleta dados da API da HubSpot, processa e calcula o *lead time* da
 
     GOOGLE_CLIENT_SECRET_JSON
     GOOGLE_TOKEN_JSON
+    ```
 
 3. **Set up do ambiente virtual (recomendado):**
 
@@ -23,11 +24,13 @@ Este projeto coleta dados da API da HubSpot, processa e calcula o *lead time* da
     python -m venv venv
     source venv/bin/activate  # On Windows use: venv\\Scripts\\activate
     pip install -r requirements.txt
+    ```
 
 4. **Execute o pipeline completo:**
 
     ```bash
     python3 -m app.api.main
+    ```
 
 ## ⏰ Cronjob
 
@@ -35,3 +38,5 @@ Esse projeto contém um cronjob configurado para rodar automaticamente de hora e
 
 ```bash
 0 * * * * moreamora/pipeline-negocios-chamadas && /usr/bin/cronitor exec main -- python3 -m app.api.main >> /tmp/main.log 2>&1
+```
+## Para mais detalhes acesse o arquivo `main.md`
