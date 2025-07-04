@@ -1,6 +1,6 @@
-from atualizar_negocios_chamadas import main as atualiza_dados
+from app.api.atualizar_negocios_chamadas import main as atualiza_dados
 from app.services.merge_negocios_chamadas import main as merge_dados
-from exportar_para_sheets import main as atualiza_google_sheets
+from app.api.exportar_para_sheets import main as atualiza_google_sheets
 
 def executar_pipeline_completo():
     print("🚀 Iniciando pipeline completo...")
