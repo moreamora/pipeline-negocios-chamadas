@@ -510,7 +510,7 @@ def atualiza_csv(tipo: str, caminho_csv: str, after_date: str, props: list, mapa
 
 
 def main():
-    DATA_CORTE = "2025-07-01"
+    DATA_CORTE = "2025-01-01"
     atualiza_csv("negocios", NEGOCIOS_CSV, DATA_CORTE, PROPERTIES_NEGOCIOS, API_TO_CSV_NEGOCIOS, "ID do registro.")
     atualiza_csv("chamadas", CHAMADAS_CSV, DATA_CORTE, PROPERTIES_CHAMADAS, API_TO_CSV_CHAMADAS, "ID do objeto")
 
