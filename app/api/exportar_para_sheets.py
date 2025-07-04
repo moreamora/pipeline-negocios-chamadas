@@ -10,7 +10,7 @@ import time
 
 # Configurações
 NEGOCIOS_CSV_PATH = "data/atualizado/negocios.csv"
-NEGOCIOS_CHAMADAS_CSV_PATH = "data/atualizado/negocios-chamadas.csv"
+NEGOCIOS_CHAMADAS_CSV_PATH = "data/atualizado/negocios-chamadas"
 SHEET_NAME = "Acompanhamento métricas-chave aMORA - 2025 - Lead time"
 WORKSHEET_NAME = "Negócios"
 
